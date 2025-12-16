@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Data / logs
+*.ndjson
+*.csv
+*.log
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
