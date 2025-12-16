@@ -247,6 +247,29 @@ export default function App() {
     }
   };
 
+  const handleUploadOhlc = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("symbol", symbol);
+
+  try {
+    const res = await fetch(`${API_URL}/api/upload_ohlc?symbol=${symbol}`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      console.error("Upload failed");
+    }
+  } catch (err) {
+    console.error("Upload error", err);
+  } finally {
+    e.target.value = null;
+  }
+};
+
+
   const handleRemoveAlert = (id) => {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   };

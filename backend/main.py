@@ -5,6 +5,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
+from fastapi import UploadFile, File, HTTPException
+import pandas as pd
+from io import StringIO
+
 import csv
 from datetime import datetime
 from typing import Set
@@ -254,6 +258,42 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
         logger.info(f"Client disconnected; total={len(manager.clients)}")
+
+
+@app.post("/api/upload_ohlc")
+async def upload_ohlc(symbol: str, file: UploadFile = File(...)):
+    """
+    Upload OHLC CSV (time, open, high, low, close, volume).
+    Used to backfill analytics but app must also run without any upload.
+    """
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files supported")
+
+    try:
+        content = (await file.read()).decode("utf-8")
+        df = pd.read_csv(StringIO(content))
+        required = {"time", "open", "high", "low", "close", "volume"}
+        if not required.issubset(df.columns):
+            raise HTTPException(status_code=400,
+                                detail=f"CSV must contain columns: {', '.join(required)}")
+
+        inserted = 0
+        for _, row in df.iterrows():
+            tick = Tick(
+                symbol=symbol.lower(),
+                timestamp=datetime.fromisoformat(str(row["time"])),
+                price=float(row["close"]),
+                size=float(row.get("volume", 0.0)),
+            )
+            db.insert_tick(tick)
+            inserted += 1
+
+        return {"status": "ok", "inserted": inserted}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload OHLC failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse/upload OHLC")
 
 
 if __name__ == "__main__":

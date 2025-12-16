@@ -8,6 +8,7 @@ function Header({
   setTimeInterval,
   wsConnected,
   onExport,
+  onUploadOhlc,           // ✅ add here
 }) {
   return (
     <header className="header">
@@ -21,6 +22,7 @@ function Header({
           {wsConnected ? "🔴 LIVE" : "⚪ OFFLINE"}
         </div>
 
+        {/* Asset select */}
         <div className="control-group">
           <label className="control-label">Asset</label>
           <select
@@ -34,6 +36,7 @@ function Header({
           </select>
         </div>
 
+        {/* Interval select */}
         <div className="control-group">
           <label className="control-label">Interval</label>
           <select
@@ -48,9 +51,17 @@ function Header({
           </select>
         </div>
 
+        {/* Export + upload */}
         <button onClick={onExport} className="export-btn">
           ⬇️ EXPORT
         </button>
+
+        <input
+          type="file"
+          accept=".csv"
+          onChange={onUploadOhlc}     // ✅ now comes from props
+          style={{ fontSize: 10, color: "#e5e7eb" }}
+        />
       </div>
     </header>
   );
